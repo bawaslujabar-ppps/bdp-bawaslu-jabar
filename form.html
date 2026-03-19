@@ -319,8 +319,9 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Masuk
           </button>
-          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--cream2);text-align:center">
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--cream2);text-align:center;display:flex;flex-direction:column;gap:8px">
             <p style="font-size:12px;color:var(--light)">Lupa password? Hubungi admin Bawaslu Jabar</p>
+            <button onclick="showScreen('screen-register')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;text-decoration:underline">Belum punya akun? Daftar di sini</button>
           </div>
         </div>
       </div>
@@ -329,7 +330,118 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
   <footer class="site-footer">Sistem BDP &mdash; <span>Bawaslu Provinsi Jawa Barat</span> &mdash; Akses Terbatas</footer>
 </div>
 
-<!-- ══ SCREEN 2: SK & BUKU REGISTER ══ -->
+<!-- ══ SCREEN 0: REGISTER ══ -->
+<div class="screen" id="screen-register">
+  <div class="login-wrap">
+    <div class="login-hero hero">
+      <div class="hero-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFMAAAB4CAYAAACO2c71AAABo0lEQVR4nO29" alt="Bawaslu Jabar" style="height:56px;width:auto;filter:drop-shadow(0 4px 16px rgba(0,0,0,.4))"></div>
+      <div class="hero-badge">📝 Pendaftaran Akun</div>
+      <h1>Daftar Akun Baru</h1>
+      <p>Isi form di bawah. Admin akan memverifikasi dan mengirimkan password ke email Anda.</p>
+      <svg class="hero-wave" viewBox="0 0 1440 36" preserveAspectRatio="none"><path d="M0 36 Q360 0 720 18 Q1080 36 1440 9 L1440 36 Z"/></svg>
+    </div>
+    <div class="login-body">
+      <div class="login-card" style="max-width:520px">
+        <div class="login-card-head">
+          <div class="login-card-icon" style="font-size:20px">📋</div>
+          <div>
+            <div class="login-card-title">Form Pendaftaran</div>
+            <div class="login-card-sub">Data Anda akan diverifikasi oleh admin terlebih dahulu</div>
+          </div>
+        </div>
+        <div class="login-card-body">
+          <div class="login-alert" id="reg-alert">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v4M8 11v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span id="reg-alert-text"></span>
+          </div>
+          <!-- Success state -->
+          <div id="reg-success" style="display:none;text-align:center;padding:1.5rem 0">
+            <div style="font-size:48px;margin-bottom:.75rem">✅</div>
+            <div style="font-size:16px;font-weight:600;color:var(--navy);margin-bottom:.5rem">Permintaan Terkirim!</div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1.5rem">Data pendaftaran Anda telah diterima. Admin akan memverifikasi dan mengirimkan username serta password ke email Anda.</div>
+            <button class="btn btn-red btn-full" onclick="showScreen('screen-login')">Kembali ke Login</button>
+          </div>
+          <!-- Form state -->
+          <div id="reg-form-body">
+            <div class="field-row">
+              <div class="field">
+                <label>Nama Lengkap <span class="req">*</span></label>
+                <input type="text" id="reg-nama" placeholder="Nama sesuai SK">
+              </div>
+              <div class="field">
+                <label>NIP / NIPPPK <span class="req">*</span></label>
+                <input type="text" id="reg-nip" placeholder="18 digit NIP" maxlength="18">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Jabatan <span class="req">*</span></label>
+                <select id="reg-jabatan">
+                  <option value="">— Pilih —</option>
+                  <option>Ketua</option>
+                  <option>Komisioner</option>
+                  <option>Kepala Sekretariat</option>
+                  <option>Kasubbag/Kabag</option>
+                  <option>Staf</option>
+                  <option>Pengawas TPS</option>
+                  <option>Panwaslu Kecamatan</option>
+                  <option>Lainnya</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Satuan Kerja (Kab/Kota) <span class="req">*</span></label>
+                <select id="reg-satker">
+                  <option value="">— Pilih —</option>
+                  <optgroup label="Kabupaten">
+                    <option>Kabupaten Bandung</option><option>Kabupaten Bandung Barat</option>
+                    <option>Kabupaten Bekasi</option><option>Kabupaten Bogor</option>
+                    <option>Kabupaten Ciamis</option><option>Kabupaten Cianjur</option>
+                    <option>Kabupaten Cirebon</option><option>Kabupaten Garut</option>
+                    <option>Kabupaten Indramayu</option><option>Kabupaten Karawang</option>
+                    <option>Kabupaten Kuningan</option><option>Kabupaten Majalengka</option>
+                    <option>Kabupaten Pangandaran</option><option>Kabupaten Purwakarta</option>
+                    <option>Kabupaten Subang</option><option>Kabupaten Sukabumi</option>
+                    <option>Kabupaten Sumedang</option><option>Kabupaten Tasikmalaya</option>
+                  </optgroup>
+                  <optgroup label="Kota">
+                    <option>Kota Bandung</option><option>Kota Banjar</option>
+                    <option>Kota Bekasi</option><option>Kota Bogor</option>
+                    <option>Kota Cimahi</option><option>Kota Cirebon</option>
+                    <option>Kota Depok</option><option>Kota Sukabumi</option>
+                    <option>Kota Tasikmalaya</option>
+                  </optgroup>
+                </select>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Nomor WhatsApp <span class="req">*</span></label>
+                <input type="text" id="reg-wa" placeholder="Contoh: 08123456789">
+              </div>
+              <div class="field">
+                <label>Email Aktif <span class="req">*</span></label>
+                <input type="email" id="reg-email" placeholder="email@gmail.com">
+                <div class="field-hint">Password akan dikirim ke email ini</div>
+              </div>
+            </div>
+            <div class="info-box" style="margin-top:.5rem">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="8" r="6.5" stroke="#1A4D8F" stroke-width="1.5"/><path d="M8 7v5M8 5v.5" stroke="#1A4D8F" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span>Setelah daftar, admin akan memverifikasi data Anda. Password akan dikirim otomatis ke email di atas setelah disetujui.</span>
+            </div>
+            <button class="btn btn-red btn-full" id="btn-register" onclick="doRegister()" style="margin-top:.75rem">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Kirim Permintaan
+            </button>
+            <div style="margin-top:.75rem;text-align:center">
+              <button onclick="showScreen('screen-login')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);font-family:'DM Sans',sans-serif">← Kembali ke Login</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="site-footer">Sistem BDP &mdash; <span>Bawaslu Provinsi Jawa Barat</span></footer>
+</div>
 <div class="screen" id="screen-sk">
   <div class="form-hero hero">
     <div class="hero-badge">📄 Kelengkapan Administrasi</div>
@@ -1172,8 +1284,53 @@ function resetBDPForm() {
   document.querySelectorAll('.field-error').forEach(e => e.style.display='none');
 }
 
-// ── HELPERS ────────────────────────────────────────────
-function getRadio(name) {
+// ── REGISTER ───────────────────────────────────────────
+async function doRegister() {
+  const nama    = document.getElementById('reg-nama').value.trim();
+  const nip     = document.getElementById('reg-nip').value.trim();
+  const jabatan = document.getElementById('reg-jabatan').value;
+  const satker  = document.getElementById('reg-satker').value;
+  const wa      = document.getElementById('reg-wa').value.trim();
+  const email   = document.getElementById('reg-email').value.trim();
+
+  if (!nama || !nip || !jabatan || !satker || !wa || !email) {
+    showRegAlert('Semua field wajib diisi.'); return;
+  }
+  if (!/^\d{15,18}$/.test(nip)) {
+    showRegAlert('NIP harus berupa angka 15-18 digit.'); return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showRegAlert('Format email tidak valid.'); return;
+  }
+
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Mengirim…`;
+
+  const payload = { action:'register', nama, nip, jabatan, satker, wa, email, timestamp: new Date().toLocaleString('id-ID') };
+
+  try {
+    if (APPS_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') {
+      await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    }
+    document.getElementById('reg-form-body').style.display = 'none';
+    document.getElementById('reg-success').style.display   = 'block';
+    document.getElementById('reg-alert').classList.remove('show');
+  } catch(e) {
+    showRegAlert('Gagal mengirim. Periksa koneksi internet.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Kirim Permintaan`;
+}
+
+function showRegAlert(msg) {
+  const el = document.getElementById('reg-alert');
+  document.getElementById('reg-alert-text').textContent = msg;
+  el.classList.add('show');
+}
+
+
   const el = document.querySelector(`input[name="${name}"]:checked`);
   return el ? el.value : '';
 }
