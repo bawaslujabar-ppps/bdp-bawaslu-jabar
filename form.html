@@ -580,7 +580,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
         <div class="field-row">
           <div class="field">
             <label>Nama Pelapor / Petugas <span class="req">*</span></label>
-            <input type="text" id="pelapor" placeholder="Nama lengkap petugas" oninput="validateField('pelapor')">
+            <input type="text" id="pelapor" placeholder="Nama lengkap pelapor" oninput="validateField('pelapor')">
             <div class="field-error" id="err-pelapor">Nama pelapor wajib diisi.</div>
           </div>
           <div class="field">
@@ -878,9 +878,65 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Kembali
         </button>
+        <button class="btn btn-red" id="btn-review" onclick="goToReview()">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Review & Kirim
+        </button>
+      </div>
+
+    </div>
+  </main>
+  <footer class="site-footer">Sistem BDP &mdash; <span>Bawaslu Provinsi Jawa Barat</span></footer>
+</div>
+
+<!-- ══ SCREEN 4: REVIEW ══ -->
+<div class="screen" id="screen-review">
+  <div class="form-hero hero">
+    <div class="hero-badge">🔍 Review Data</div>
+    <h1>Periksa Sebelum Mengirim</h1>
+    <p>Pastikan semua data sudah benar sebelum dikirim</p>
+    <svg class="hero-wave" viewBox="0 0 1440 36" preserveAspectRatio="none"><path d="M0 36 Q360 0 720 18 Q1080 36 1440 9 L1440 36 Z"/></svg>
+  </div>
+
+  <div class="steps-nav">
+    <div class="step-item done"><div class="step-circle done">✓</div><div class="step-label">Login</div></div>
+    <div class="step-item done"><div class="step-circle done">✓</div><div class="step-label">SK & Buku</div></div>
+    <div class="step-item done"><div class="step-circle done">✓</div><div class="step-label">Detail BDP</div></div>
+    <div class="step-item active"><div class="step-circle active">4</div><div class="step-label">Review</div></div>
+  </div>
+
+  <main class="main" style="max-width:760px">
+
+    <!-- Identitas Petugas -->
+    <div class="sk-banner" style="margin-bottom:1rem">
+      <div class="sk-banner-icon">👤</div>
+      <div class="sk-banner-text">
+        <div class="sk-banner-title">Dikirim oleh: <span id="rv-nama-user">—</span></div>
+        <div class="sk-banner-sub">NIP: <span id="rv-nip-user">—</span> &nbsp;|&nbsp; <span id="rv-kota-user">—</span> &nbsp;|&nbsp; <span id="rv-waktu">—</span></div>
+      </div>
+    </div>
+
+    <!-- Tabel Review -->
+    <div class="form-card">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div>
+          <div class="card-title">Ringkasan Data BDP</div>
+          <div class="card-sub">Periksa kembali. Klik "Edit Data" jika perlu mengubah.</div>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" id="rv-table"></table>
+      </div>
+
+      <div class="form-nav">
+        <button class="btn btn-ghost" onclick="showScreen('screen-form')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Edit Data
+        </button>
         <button class="btn btn-red" id="btn-submit" onclick="submitBDP()">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Kirim Data BDP
+          Konfirmasi & Kirim
         </button>
       </div>
 
@@ -901,13 +957,13 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
           </a>
         </div>
       </div>
+
     </div>
   </main>
   <footer class="site-footer">Sistem BDP &mdash; <span>Bawaslu Provinsi Jawa Barat</span></footer>
 </div>
 
-<script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec';
+
 
 let currentUser = null;
 let skStatus    = null;
@@ -1026,16 +1082,44 @@ function toggleSKDetail(show) {
 }
 
 async function saveSK() {
+  const skVal   = getRadio('sk_tim')   || 'Tidak Ada';
+  const bukuVal = getRadio('buku_reg') || 'Tidak Ada';
+
+  // Validasi: harus punya SK DAN Buku Register
+  if (skVal !== 'Ada' || bukuVal !== 'Ada') {
+    const missing = [];
+    if (skVal   !== 'Ada') missing.push('SK Tim BDP');
+    if (bukuVal !== 'Ada') missing.push('Buku Register BDP');
+    const btn = document.getElementById('btn-save-sk');
+    // Tampilkan notifikasi
+    const existing = document.getElementById('sk-validation-warn');
+    if (existing) existing.remove();
+    const box = document.createElement('div');
+    box.id = 'sk-validation-warn';
+    box.className = 'warn-box';
+    box.style.cssText = 'margin:0 2rem 1rem;display:flex;gap:10px;align-items:flex-start';
+    box.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:1px"><path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v4M8 11.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>Untuk melanjutkan, satuan kerja Anda wajib memiliki <b>${missing.join(' dan ')}</b>.<br>
+      Jika belum tersedia, silakan hubungi <b>Admin Bawaslu Provinsi Jawa Barat</b> untuk kelengkapan administrasi.</span>`;
+    btn.parentNode.insertBefore(box, btn.parentNode.firstChild);
+    box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+
+  // Hapus warning jika ada
+  const existing = document.getElementById('sk-validation-warn');
+  if (existing) existing.remove();
+
   const btn = document.getElementById('btn-save-sk');
   btn.disabled = true;
   btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Menyimpan…`;
   const payload = {
     action:'saveSK', kota:currentUser.kota, nip:currentUser.nip,
-    sk_tim:      getRadio('sk_tim') || 'Tidak Ada',
+    sk_tim:      skVal,
     nosk:        (document.getElementById('nosk')  ? document.getElementById('nosk').value  : '') || '',
     tglsk:       (document.getElementById('tglsk') ? document.getElementById('tglsk').value : '') || '',
     gdrive_sk:   getRadio('gdrive_sk')   || 'Belum Upload',
-    buku_reg:    getRadio('buku_reg')    || 'Tidak Ada',
+    buku_reg:    bukuVal,
     gdrive_buku: getRadio('gdrive_buku') || 'Belum Upload',
     updated_at:  new Date().toLocaleDateString('id-ID'),
   };
@@ -1052,6 +1136,83 @@ function goToForm() {
   document.getElementById('form-kota-label').textContent    = currentUser.kota;
   document.getElementById('form-pelapor-label').textContent = 'Login sebagai: ' + currentUser.nama + ' (' + currentUser.nip + ')';
   showScreen('screen-form');
+}
+
+function goToReview() {
+  // Validasi dulu sebelum lanjut ke review
+  const statusVal = getRadio('status_bdp');
+  const sumberVal = getRadio('sumber_bdp');
+  const isLaporan = sumberVal === 'Laporan Masyarakat';
+
+  let ok = validateField('pelapor')
+    & validateField('tgl_terima')
+    & validateField('jenis_barang')
+    & validateField('jumlah')
+    & validateField('kategori')
+    & validateRadio('sumber_bdp','err-sumber_bdp')
+    & validateRadio('klasifikasi','err-klasifikasi')
+    & validateRadio('tempat_simpan','err-tempat_simpan')
+    & (statusVal ? true : (document.getElementById('err-status_bdp').style.display='block', false));
+
+  if (isLaporan) {
+    ok &= validateField('mas_nama') & validateNIK() & validateField('mas_alamat');
+    if (!document.getElementById('file-ktp').files.length) { alert('Wajib upload KTP pelapor.'); ok=false; }
+    if (!document.getElementById('file-dok-laporan').files.length) { alert('Wajib upload dokumentasi BDP.'); ok=false; }
+  }
+  if (statusVal === 'Masih dalam penguasaan Bawaslu' && !document.getElementById('file-foto-bdp').files.length) {
+    alert('Wajib upload foto/dokumentasi BDP.'); ok=false;
+  }
+  if ((statusVal==='Dikembalikan'||statusVal==='Ditolak') && !document.getElementById('file-pengembalian').files.length) {
+    alert('Wajib upload BA Pengembalian/Penolakan.'); ok=false;
+  }
+  if (statusVal==='Dimusnahkan' && (!document.getElementById('file-pengumuman').files.length||!document.getElementById('file-sk-musna').files.length)) {
+    alert('Wajib upload Pengumuman BDP dan SK Pemusnahan.'); ok=false;
+  }
+  if (!ok) { window.scrollTo({top:300,behavior:'smooth'}); return; }
+
+  // Isi data review
+  document.getElementById('rv-nama-user').textContent  = currentUser.nama;
+  document.getElementById('rv-nip-user').textContent   = currentUser.nip;
+  document.getElementById('rv-kota-user').textContent  = currentUser.kota;
+  document.getElementById('rv-waktu').textContent      = new Date().toLocaleString('id-ID');
+
+  const sifat = [];
+  if (document.getElementById('sifat_rusak')?.checked)   sifat.push('Mudah Rusak');
+  if (document.getElementById('sifat_menguap')?.checked)  sifat.push('Mudah Menguap');
+  if (document.getElementById('sifat_terbakar')?.checked) sifat.push('Mudah Terbakar');
+
+  const rows = [
+    ['Pelapor',            document.getElementById('pelapor').value],
+    ['Tanggal Penerimaan', document.getElementById('tgl_terima').value],
+    ['Sumber BDP',         sumberVal],
+    isLaporan ? ['Nama Pelapor Masyarakat', document.getElementById('mas_nama').value] : null,
+    isLaporan ? ['NIK Pelapor',             document.getElementById('mas_nik').value]  : null,
+    isLaporan ? ['Alamat Pelapor',          document.getElementById('mas_alamat').value] : null,
+    ['Kategori Pemilihan', document.getElementById('kategori').value],
+    ['No. Laporan',        document.getElementById('no_laporan').value || '—'],
+    ['Klasifikasi Barang', getRadio('klasifikasi') + (getRadio('wujud') ? ' / ' + getRadio('wujud') : '')],
+    sifat.length ? ['Sifat Barang',        sifat.join(', ')] : null,
+    ['Nama / Deskripsi',   document.getElementById('jenis_barang').value],
+    ['Jumlah / Satuan',    document.getElementById('jumlah').value],
+    ['Nominal Estimasi',   document.getElementById('nominal').value ? 'Rp ' + Number(document.getElementById('nominal').value).toLocaleString('id-ID') : '—'],
+    ['Tempat Penyimpanan', getRadio('tempat_simpan')],
+    ['BA Serah Terima',    getRadio('ba_serahterima') || 'Belum Ada'],
+    ['Dokumentasi Digital',getRadio('dokumentasi_digital') || 'Belum'],
+    ['Jenis Perkara',      getRadio('jenis_perkara') || '—'],
+    ['Lokasi Temuan',      document.getElementById('lokasi_temuan').value || '—'],
+    ['Status BDP',         statusVal],
+    ['SK Tim BDP',         skStatus ? skStatus.sk_tim  : '—'],
+    ['Buku Register',      skStatus ? skStatus.buku_reg: '—'],
+    ['Keterangan',         document.getElementById('ket').value || '—'],
+  ].filter(Boolean);
+
+  document.getElementById('rv-table').innerHTML = rows.map((r, i) => `
+    <tr style="background:${i%2===0?'var(--cream)':'#fff'}">
+      <td style="padding:9px 16px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;width:42%;border-bottom:1px solid var(--cream2)">${r[0]}</td>
+      <td style="padding:9px 16px;font-size:13px;color:var(--text);border-bottom:1px solid var(--cream2)">${r[1]}</td>
+    </tr>`).join('');
+
+  showScreen('screen-review');
 }
 
 // ── SUMBER BDP CHANGE ──────────────────────────────────
@@ -1245,14 +1406,14 @@ function showSuccess(d) {
     <div class="sd-row"><span class="sd-label">Waktu Kirim</span><span class="sd-val">${d.timestamp}</span></div>
   `;
   document.getElementById('success-screen').classList.add('show');
-  document.querySelector('#screen-form .form-nav').style.display = 'none';
+  document.querySelector('#screen-review .form-nav').style.display = 'none';
   document.getElementById('btn-submit').style.display = 'none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function resetBDPForm() {
   document.getElementById('success-screen').classList.remove('show');
-  document.querySelector('#screen-form .form-nav').style.display = 'flex';
+  document.querySelector('#screen-review .form-nav').style.display = 'flex';
   document.getElementById('btn-submit').style.display = 'flex';
   ['pelapor','tgl_terima','no_laporan','jenis_barang','jumlah','nominal','lokasi_temuan','ket','mas_nama','mas_nik','mas_alamat'].forEach(id => {
     const el = document.getElementById(id);
