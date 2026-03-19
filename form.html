@@ -795,7 +795,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 <script>
-const APPS_SCRIPT_URL = 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec';
 
 let currentUser = null;
 let skStatus    = null;
@@ -928,7 +928,7 @@ async function saveSK() {
     updated_at:  new Date().toLocaleDateString('id-ID'),
   };
   skStatus = payload;
-  if (APPS_SCRIPT_URL !== 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA') {
+  if (APPS_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') {
     try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
   }
   btn.disabled = false;
@@ -1100,7 +1100,7 @@ async function submitBDP() {
     buku_reg: skStatus ? skStatus.buku_reg: '—',
   };
 
-  if (APPS_SCRIPT_URL !== 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA') {
+  if (APPS_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') {
     try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
   }
 
