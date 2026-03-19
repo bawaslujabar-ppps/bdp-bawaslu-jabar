@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard BDP — Bawaslu Jawa Barat</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:#0B1F3A; --navy2:#132D52; --navy3:#1A3A6B;
+    --gold:#C9A84C; --gold2:#E8C96A;
+    --cream:#F7F4EE; --cream2:#EDE8DF;
+    --text:#1A1A2E; --muted:#5A6478;
+    --danger:#C0392B; --danger-bg:#FDECEA;
+    --success:#1A7A4A; --success-bg:#EAF7EF;
+    --warn:#A0600A; --warn-bg:#FEF3E2;
+    --info:#1A4D8F; --info-bg:#E8F0FB;
+    --border:rgba(11,31,58,.12);
+    --shadow:0 2px 16px rgba(11,31,58,.08);
+    --r:10px; --r-lg:16px;
+  }
+  html { font-size:15px; }
+  body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; }
+
+  .site-header { background:var(--navy); color:#fff; padding:0 2rem; display:flex; align-items:stretch; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 24px rgba(0,0,0,.25); }
+  .header-brand { display:flex; align-items:center; gap:14px; padding:1rem 1.5rem 1rem 0; border-right:1px solid rgba(255,255,255,.08); margin-right:1.5rem; }
+  .logo-mark { width:40px; height:40px; background:var(--gold); border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:'DM Serif Display',serif; font-size:18px; color:var(--navy); flex-shrink:0; }
+  .brand-name { font-size:13px; font-weight:600; color:#fff; }
+  .brand-sub  { font-size:11px; color:rgba(255,255,255,.5); }
+  .header-title { display:flex; align-items:center; gap:10px; flex:1; }
+  .header-title h1 { font-family:'DM Serif Display',serif; font-size:17px; font-weight:400; color:var(--gold2); }
+  .header-badge { font-size:10px; font-weight:600; letter-spacing:.08em; background:rgba(201,168,76,.18); color:var(--gold2); border:1px solid rgba(201,168,76,.3); padding:3px 10px; border-radius:999px; }
+  .header-actions { display:flex; align-items:center; gap:8px; }
+  .hbtn { height:34px; padding:0 14px; font-size:12px; font-weight:500; border-radius:7px; cursor:pointer; border:none; display:inline-flex; align-items:center; gap:6px; transition:all .18s; font-family:'DM Sans',sans-serif; }
+  .hbtn-outline { background:rgba(255,255,255,.08); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.15); }
+  .hbtn-outline:hover { background:rgba(255,255,255,.15); }
+  .hbtn-gold { background:var(--gold); color:var(--navy); font-weight:600; }
+  .hbtn-gold:hover { background:var(--gold2); }
+
+  .sync-bar { background:var(--navy2); color:rgba(255,255,255,.6); font-size:11px; padding:6px 2rem; display:flex; align-items:center; gap:8px; }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:#888; flex-shrink:0; }
+  .sync-dot.ok   { background:#2ecc71; box-shadow:0 0 6px rgba(46,204,113,.5); }
+  .sync-dot.err  { background:#e74c3c; }
+  .sync-dot.load { background:var(--gold); animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+  .main { max-width:1400px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+
+  .stat-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:2rem; }
+  .stat-card { background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); padding:1.1rem 1.25rem; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden; animation:fadeUp .4s both; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+  .stat-card.c-navy::before  { background:var(--navy); }
+  .stat-card.c-gold::before  { background:var(--gold); }
+  .stat-card.c-green::before { background:var(--success); }
+  .stat-card.c-red::before   { background:var(--danger); }
+  .stat-card.c-warn::before  { background:var(--warn); }
+  .stat-icon  { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:4px; }
+  .stat-label { font-size:11px; font-weight:500; color:var(--muted); letter-spacing:.03em; text-transform:uppercase; }
+  .stat-value { font-size:26px; font-weight:600; color:var(--text); line-height:1; }
+  .stat-sub   { font-size:11px; color:var(--muted); }
+
+  .sec-head  { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .sec-title { font-family:'DM Serif Display',serif; font-size:19px; font-weight:400; color:var(--navy); display:flex; align-items:center; gap:10px; }
+  .sec-title::before { content:''; display:block; width:4px; height:20px; background:var(--gold); border-radius:2px; }
+
+  .charts-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:2rem; }
+  @media(max-width:900px){ .charts-row{grid-template-columns:1fr;} }
+  .chart-card { background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); padding:1.25rem; box-shadow:var(--shadow); animation:fadeUp .5s .1s both; }
+  .chart-card-title { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:1rem; }
+  .chart-wrap { position:relative; height:180px; }
+  .progress-list { display:flex; flex-direction:column; gap:12px; }
+  .prog-head { display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; }
+  .prog-label { font-weight:500; color:var(--text); }
+  .prog-count { color:var(--muted); }
+  .prog-bar  { height:7px; background:var(--cream2); border-radius:99px; overflow:hidden; }
+  .prog-fill { height:100%; border-radius:99px; transition:width 1s cubic-bezier(.22,1,.36,1); }
+
+  .table-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:1rem; }
+  .search-wrap { position:relative; flex:1; min-width:220px; }
+  .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:.4; }
+  .search-wrap input { width:100%; padding:8px 12px 8px 34px; border:1px solid var(--border); border-radius:var(--r); background:#fff; font-size:13px; color:var(--text); font-family:'DM Sans',sans-serif; }
+  .search-wrap input:focus { outline:none; border-color:var(--navy3); box-shadow:0 0 0 3px rgba(26,58,107,.08); }
+  select.filter-sel { height:38px; padding:0 12px; font-size:13px; border:1px solid var(--border); border-radius:var(--r); background:#fff; color:var(--text); cursor:pointer; font-family:'DM Sans',sans-serif; }
+  select.filter-sel:focus { outline:none; border-color:var(--navy3); }
+
+  .table-card { background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow); overflow:hidden; animation:fadeUp .5s .2s both; }
+  .table-scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:960px; }
+  thead { background:var(--navy); }
+  th { padding:10px 12px; text-align:left; font-size:11px; font-weight:600; color:rgba(255,255,255,.7); letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; cursor:pointer; user-select:none; }
+  th:hover { color:var(--gold2); }
+  td { padding:9px 12px; border-bottom:1px solid var(--cream2); color:var(--text); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--cream); }
+  .col-no   { color:var(--muted); font-size:11px; width:40px; }
+  .col-kota { font-weight:500; white-space:nowrap; }
+  .col-nom  { text-align:right; font-variant-numeric:tabular-nums; font-weight:500; }
+  .col-ket  { color:var(--muted); font-size:12px; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .badge { display:inline-block; font-size:11px; font-weight:600; padding:2px 9px; border-radius:999px; white-space:nowrap; letter-spacing:.02em; }
+  .b-ada    { background:var(--success-bg); color:var(--success); }
+  .b-tidak  { background:var(--cream2); color:var(--muted); }
+  .b-sudah  { background:var(--success-bg); color:var(--success); }
+  .b-belum  { background:var(--warn-bg); color:var(--warn); }
+  .b-uang   { background:var(--warn-bg); color:var(--warn); }
+  .b-sembako{ background:var(--success-bg); color:var(--success); }
+  .b-pakaian{ background:#fce8f0; color:#8b1f4e; }
+  .b-elektro{ background:var(--info-bg); color:var(--info); }
+  .b-lainnya{ background:var(--cream2); color:var(--muted); }
+  .b-pidana { background:var(--danger-bg); color:var(--danger); }
+  .b-adm    { background:var(--cream2); color:var(--muted); }
+  .b-etik   { background:var(--warn-bg); color:var(--warn); }
+  .b-pemilu { background:var(--info-bg); color:var(--info); }
+  .b-pemilihan{ background:#eef2fe; color:#2a3fa0; }
+
+  .loading-overlay { position:fixed; inset:0; background:var(--navy); z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; transition:opacity .5s; }
+  .loading-overlay.hide { opacity:0; pointer-events:none; }
+  .loading-logo { width:56px; height:56px; background:var(--gold); border-radius:14px; display:flex; align-items:center; justify-content:center; font-family:'DM Serif Display',serif; font-size:28px; color:var(--navy); }
+  .loading-text { color:rgba(255,255,255,.6); font-size:13px; }
+  .loading-bar  { width:200px; height:3px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; }
+  .loading-fill { height:100%; background:var(--gold); border-radius:99px; animation:load 1.5s ease-in-out infinite; }
+  @keyframes load { 0%{width:0;margin-left:0}50%{width:60%;margin-left:40%}100%{width:0;margin-left:100%} }
+
+  .empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); }
+  .empty-icon  { font-size:36px; margin-bottom:.75rem; opacity:.4; }
+
+  .site-footer { background:var(--navy); color:rgba(255,255,255,.45); text-align:center; padding:1.25rem; font-size:12px; margin-top:2rem; }
+  .site-footer span { color:var(--gold); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
+  @media(max-width:680px){ .header-badge{display:none} .header-title h1{font-size:14px} .main{padding:1rem .75rem 3rem} }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">B</div>
+  <div class="loading-text">Memuat data dari Google Sheets…</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<header class="site-header">
+  <div class="header-brand">
+    <div class="logo-mark">B</div>
+    <div>
+      <div class="brand-name">BAWASLU</div>
+      <div class="brand-sub">Jawa Barat</div>
+    </div>
+  </div>
+  <div class="header-title">
+    <h1>Dashboard Barang Dugaan Pelanggaran</h1>
+    <span class="header-badge">LIVE DATA</span>
+  </div>
+  <div class="header-actions">
+    <button class="hbtn hbtn-outline" onclick="loadData()">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 2.5v3h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Refresh
+    </button>
+    <button class="hbtn hbtn-outline" onclick="exportCSV()">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9m0 0L5 7m3 3 3-3M2 12l1 2h10l1-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Ekspor CSV
+    </button>
+    <button class="hbtn hbtn-gold" onclick="window.open('https://docs.google.com/spreadsheets/d/1AG6pVCmq71-ravNlF9luMpXgSnLAVAi-xd0WkVn-bpQ/edit','_blank')">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M5 5h6M5 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Edit di Sheets
+    </button>
+  </div>
+</header>
+
+<div class="sync-bar">
+  <div class="sync-dot load" id="sync-dot"></div>
+  <span id="sync-text">Menghubungkan ke Google Sheets…</span>
+</div>
+
+<main class="main">
+  <div class="stat-strip">
+    <div class="stat-card c-navy">
+      <div class="stat-icon" style="background:#e8edf5">📋</div>
+      <div class="stat-label">Total Kab/Kota</div>
+      <div class="stat-value" id="s-total">—</div>
+      <div class="stat-sub">Jawa Barat</div>
+    </div>
+    <div class="stat-card c-gold">
+      <div class="stat-icon" style="background:#fef8e8">📄</div>
+      <div class="stat-label">Ada SK Tim BDP</div>
+      <div class="stat-value" id="s-sk">—</div>
+      <div class="stat-sub" id="s-sk-pct">—</div>
+    </div>
+    <div class="stat-card c-green">
+      <div class="stat-icon" style="background:#eaf7ef">📚</div>
+      <div class="stat-label">Buku Register Ada</div>
+      <div class="stat-value" id="s-buku">—</div>
+      <div class="stat-sub" id="s-buku-pct">—</div>
+    </div>
+    <div class="stat-card c-navy">
+      <div class="stat-icon" style="background:#e8edf5">☁️</div>
+      <div class="stat-label">Sudah Upload GDrive</div>
+      <div class="stat-value" id="s-upload">—</div>
+      <div class="stat-sub">SK + Buku</div>
+    </div>
+    <div class="stat-card c-warn">
+      <div class="stat-icon" style="background:#fef3e2">📦</div>
+      <div class="stat-label">Total Item BDP</div>
+      <div class="stat-value" id="s-item">—</div>
+      <div class="stat-sub">teridentifikasi</div>
+    </div>
+    <div class="stat-card c-red">
+      <div class="stat-icon" style="background:#fdecea">💰</div>
+      <div class="stat-label">Total Nominal</div>
+      <div class="stat-value" id="s-nominal" style="font-size:20px">—</div>
+      <div class="stat-sub">estimasi</div>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2 class="sec-title">Ringkasan Visual</h2></div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-title">Status SK Tim BDP</div>
+      <div class="chart-wrap"><canvas id="chartSK"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Distribusi Jenis Barang</div>
+      <div class="chart-wrap"><canvas id="chartJenis"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-title">Progress Upload GDrive</div>
+      <div style="margin-top:.5rem" class="progress-list" id="prog-list"></div>
+    </div>
+  </div>
+
+  <div class="sec-head">
+    <h2 class="sec-title">Data Per Satuan Kerja</h2>
+    <span id="row-count" style="font-size:13px;color:var(--muted)"></span>
+  </div>
+  <div class="table-toolbar">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#666" stroke-width="1.5"/><path d="M10 10l3.5 3.5" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input id="search" placeholder="Cari kab/kota, no SK, keterangan…" oninput="render()">
+    </div>
+    <select class="filter-sel" id="f-sk" onchange="render()">
+      <option value="">SK Tim: Semua</option>
+      <option value="Ada">Ada</option>
+      <option value="Tidak Ada">Tidak Ada</option>
+    </select>
+    <select class="filter-sel" id="f-jenis" onchange="render()">
+      <option value="">Jenis: Semua</option>
+      <option>Uang</option><option>Sembako</option>
+      <option>Pakaian</option><option>Elektronik/Dokumen</option><option>Lainnya</option>
+    </select>
+    <select class="filter-sel" id="f-perkara" onchange="render()">
+      <option value="">Perkara: Semua</option>
+      <option>Administrasi</option><option>Tindak Pidana</option>
+      <option>Etik</option><option>Peraturan Lainnya</option>
+    </select>
+  </div>
+
+  <div class="table-card">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th onclick="sortBy('kota')">Satuan Kerja</th>
+            <th onclick="sortBy('sk_tim')">SK Tim BDP</th>
+            <th>No SK / Tanggal</th>
+            <th onclick="sortBy('gdrive_sk')">GDrive SK</th>
+            <th onclick="sortBy('buku_reg')">Buku Register</th>
+            <th onclick="sortBy('gdrive_buku')">GDrive Buku</th>
+            <th onclick="sortBy('jenis_barang')">Jenis Barang</th>
+            <th onclick="sortBy('jenis_perkara')">Jenis Perkara</th>
+            <th onclick="sortBy('nominal')" style="text-align:right">Nominal</th>
+            <th>Keterangan</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="empty-icon">🔍</div>
+      <div style="font-size:14px">Tidak ada data yang cocok</div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  Dashboard BDP &mdash; <span>Bawaslu Provinsi Jawa Barat</span> &mdash;
+  Data diambil langsung dari <span>Google Sheets</span>
+</footer>
+
+<script>
+const SHEET_ID  = '1AG6pVCmq71-ravNlF9luMpXgSnLAVAi-xd0WkVn-bpQ';
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+let data = [];
+let sortCol = 'kota', sortAsc = true;
+let chartSK, chartJenis;
+
+async function loadData() {
+  setSyncStatus('load', 'Memuat data dari Google Sheets…');
+  try {
+    const res  = await fetch(SHEET_URL + '&t=' + Date.now());
+    const text = await res.text();
+    const json = JSON.parse(text.replace(/^[^\(]+\(/, '').replace(/\);\s*$/, ''));
+    const cols = json.table.cols.map(c => (c.label || '').toLowerCase().replace(/\s+/g,'_').trim());
+    const rows = json.table.rows || [];
+
+    data = rows
+      .filter(r => r.c && r.c[0] && r.c[0].v)
+      .map(r => {
+        const obj = {};
+        cols.forEach((col, i) => {
+          const cell = r.c ? r.c[i] : null;
+          obj[col] = (cell && cell.v !== null && cell.v !== undefined) ? String(cell.v).trim() : '';
+        });
+        // Normalisasi nama kolom dari Sheets asli
+        obj.kota        = obj.kota || obj.satuan_kerja || obj['satuan kerja'] || '';
+        obj.sk_tim      = obj.sk_tim || obj.sk_tim_bdp || 'Tidak Ada';
+        obj.nosk        = obj.nosk || obj.no_sk_tim_bdp || '';
+        obj.tglsk       = obj.tglsk || obj.tanggal_sk_tim_bdp || '';
+        obj.gdrive_sk   = obj.gdrive_sk || obj.upload_gdrive || 'Belum Upload';
+        obj.buku_reg    = obj.buku_reg || obj.buku_register_bdp || 'Tidak Ada';
+        obj.gdrive_buku = obj.gdrive_buku || obj['upload_gdrive.1'] || obj.upload_gdrive_1 || 'Belum Upload';
+        obj.nominal     = parseFloat((obj.nominal||'').replace(/[^0-9.]/g,'')) || 0;
+        return obj;
+      })
+      .filter(r => r.kota);
+
+    const t = new Date();
+    setSyncStatus('ok', `Sinkronisasi berhasil · ${t.toLocaleTimeString('id-ID')} · ${data.length} baris data`);
+    render();
+  } catch(e) {
+    setSyncStatus('err', 'Gagal memuat — pastikan Sheets sudah di-share "Anyone with the link". Klik Refresh untuk coba lagi.');
+    console.error(e);
+  }
+  hideLoading();
+}
+
+function setSyncStatus(type, msg) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + type;
+  document.getElementById('sync-text').textContent = msg;
+}
+function hideLoading() {
+  const el = document.getElementById('loading');
+  el.classList.add('hide');
+  setTimeout(() => el.style.display='none', 600);
+}
+
+function fmt(n) {
+  if (!n) return '-';
+  const v = Number(n);
+  if (v >= 1e9) return 'Rp ' + (v/1e9).toFixed(2) + ' M';
+  if (v >= 1e6) return 'Rp ' + (v/1e6).toFixed(1) + ' jt';
+  if (v > 0)    return 'Rp ' + v.toLocaleString('id-ID');
+  return '-';
+}
+function badgeSK(v)  { const a=v==='Ada'; return `<span class="badge ${a?'b-ada':'b-tidak'}">${v||'Tidak Ada'}</span>`; }
+function badgeGD(v)  { const a=v==='Sudah Upload'; return `<span class="badge ${a?'b-sudah':'b-belum'}">${v||'Belum Upload'}</span>`; }
+function badgeJ(v) {
+  const m={'Uang':'b-uang','Sembako':'b-sembako','Pakaian':'b-pakaian','Elektronik/Dokumen':'b-elektro','Lainnya':'b-lainnya'};
+  return v ? `<span class="badge ${m[v]||'b-lainnya'}">${v}</span>` : '<span style="color:var(--muted);font-size:12px">—</span>';
+}
+function badgeP(v) {
+  const m={'Tindak Pidana':'b-pidana','Administrasi':'b-adm','Etik':'b-etik','Peraturan Lainnya':'b-lainnya'};
+  return v ? `<span class="badge ${m[v]||'b-lainnya'}">${v}</span>` : '<span style="color:var(--muted);font-size:12px">—</span>';
+}
+
+function filtered() {
+  const q  = (document.getElementById('search').value||'').toLowerCase();
+  const fs = document.getElementById('f-sk').value;
+  const fj = document.getElementById('f-jenis').value;
+  const fp = document.getElementById('f-perkara').value;
+  return data.filter(d => {
+    const qm = !q || Object.values(d).some(v => String(v).toLowerCase().includes(q));
+    return qm && (!fs||d.sk_tim===fs) && (!fj||d.jenis_barang===fj) && (!fp||d.jenis_perkara===fp);
+  });
+}
+function sortBy(col) {
+  sortAsc = (sortCol===col) ? !sortAsc : true;
+  sortCol = col;
+  render();
+}
+
+function initCharts() {
+  chartSK = new Chart(document.getElementById('chartSK'), {
+    type:'doughnut',
+    data:{ labels:['Ada','Tidak Ada'], datasets:[{data:[0,1],backgroundColor:['#1A7A4A','#B4B2A9'],borderWidth:0,hoverOffset:4}] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{family:'DM Sans',size:11}, color:'#5A6478' } } } }
+  });
+  chartJenis = new Chart(document.getElementById('chartJenis'), {
+    type:'bar',
+    data:{ labels:['Uang','Sembako','Pakaian','Elektronik','Lainnya'],
+      datasets:[{data:[0,0,0,0,0],backgroundColor:['#C9A84C','#1A7A4A','#8b1f4e','#1A4D8F','#B4B2A9'],borderRadius:5,borderSkipped:false}] },
+    options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ beginAtZero:true, ticks:{stepSize:1,font:{family:'DM Sans',size:10}}, grid:{color:'rgba(0,0,0,.05)'} },
+        y:{ ticks:{font:{family:'DM Sans',size:11},color:'#5A6478'}, grid:{display:false} }
+      }
+    }
+  });
+}
+
+function updateProgress() {
+  const total = data.length || 1;
+  const items = [
+    { label:'SK Tim BDP Ada',     count:data.filter(d=>d.sk_tim==='Ada').length,             color:'#0B1F3A' },
+    { label:'GDrive SK Upload',   count:data.filter(d=>d.gdrive_sk==='Sudah Upload').length,  color:'#C9A84C' },
+    { label:'Buku Register Ada',  count:data.filter(d=>d.buku_reg==='Ada').length,            color:'#1A7A4A' },
+    { label:'GDrive Buku Upload', count:data.filter(d=>d.gdrive_buku==='Sudah Upload').length,color:'#1A4D8F' },
+  ];
+  document.getElementById('prog-list').innerHTML = items.map(it=>{
+    const pct = Math.round(it.count/total*100);
+    return `<div class="prog-item">
+      <div class="prog-head"><span class="prog-label">${it.label}</span><span class="prog-count">${it.count}/${data.length}</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${it.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function render() {
+  const total   = data.length;
+  const skAda   = data.filter(d=>d.sk_tim==='Ada').length;
+  const bukuAda = data.filter(d=>d.buku_reg==='Ada').length;
+  const upSK    = data.filter(d=>d.gdrive_sk==='Sudah Upload').length;
+  const upBuku  = data.filter(d=>d.gdrive_buku==='Sudah Upload').length;
+  const items   = data.filter(d=>d.jenis_barang).length;
+  const totNom  = data.reduce((s,d)=>s+(+d.nominal||0),0);
+
+  document.getElementById('s-total').textContent   = total || '—';
+  document.getElementById('s-sk').textContent      = skAda;
+  document.getElementById('s-sk-pct').textContent  = total ? Math.round(skAda/total*100)+'% dari total' : '—';
+  document.getElementById('s-buku').textContent    = bukuAda;
+  document.getElementById('s-buku-pct').textContent= total ? Math.round(bukuAda/total*100)+'% dari total' : '—';
+  document.getElementById('s-upload').textContent  = upSK + upBuku;
+  document.getElementById('s-item').textContent    = items;
+  document.getElementById('s-nominal').textContent = totNom ? fmt(totNom) : 'Rp 0';
+
+  chartSK.data.datasets[0].data = [skAda, Math.max(total-skAda,0)];
+  chartSK.update();
+  const jC = {'Uang':0,'Sembako':0,'Pakaian':0,'Elektronik/Dokumen':0,'Lainnya':0};
+  data.forEach(d=>{ if(d.jenis_barang && jC[d.jenis_barang]!==undefined) jC[d.jenis_barang]++; });
+  chartJenis.data.datasets[0].data = Object.values(jC);
+  chartJenis.update();
+  updateProgress();
+
+  const rows = filtered().sort((a,b)=>{
+    let va=a[sortCol]||'', vb=b[sortCol]||'';
+    if(sortCol==='nominal'){va=+va;vb=+vb;}
+    return sortAsc?(va<vb?-1:va>vb?1:0):(va<vb?1:va>vb?-1:0);
+  });
+
+  document.getElementById('row-count').textContent = `${rows.length} dari ${total} satuan kerja`;
+  document.getElementById('empty-state').style.display = rows.length?'none':'block';
+  document.getElementById('tbody').innerHTML = rows.map((d,i)=>`
+    <tr>
+      <td class="col-no">${i+1}</td>
+      <td class="col-kota">${d.kota}</td>
+      <td>${badgeSK(d.sk_tim)}</td>
+      <td style="font-size:12px;color:var(--muted);white-space:nowrap">
+        ${d.nosk||'<span style="opacity:.4">—</span>'}
+        ${d.tglsk?`<br><span style="font-size:11px;opacity:.6">${d.tglsk}</span>`:''}
+      </td>
+      <td>${badgeGD(d.gdrive_sk)}</td>
+      <td>${badgeSK(d.buku_reg)}</td>
+      <td>${badgeGD(d.gdrive_buku)}</td>
+      <td>${badgeJ(d.jenis_barang)}</td>
+      <td>${badgeP(d.jenis_perkara)}</td>
+      <td class="col-nom">${d.nominal?fmt(d.nominal):'<span style="opacity:.35">—</span>'}</td>
+      <td class="col-ket" title="${d.ket||''}">${d.ket||'<span style="opacity:.35">—</span>'}</td>
+    </tr>
+  `).join('');
+}
+
+function exportCSV() {
+  if(!data.length){ alert('Belum ada data.'); return; }
+  const h = ['No','Satuan Kerja','SK Tim BDP','No SK','Tgl SK','GDrive SK','Buku Register','GDrive Buku','Jenis Barang','Jumlah','Nominal','Kategori','Jenis Perkara','Keterangan'];
+  const rows = filtered();
+  const csv = [h.join(','), ...rows.map((d,i)=>[
+    i+1,`"${d.kota}"`,d.sk_tim,`"${d.nosk||''}"`,d.tglsk||'',
+    d.gdrive_sk,d.buku_reg,d.gdrive_buku,
+    d.jenis_barang||'',`"${d.jumlah||''}"`,d.nominal||0,
+    d.kategori||'',d.jenis_perkara||'',`"${(d.ket||'').replace(/"/g,'""')}"`
+  ].join(','))].join('\n');
+  const b = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download='data_bdp_bawaslu_jabar.csv'; a.click();
+}
+
+initCharts();
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
