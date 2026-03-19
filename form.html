@@ -795,7 +795,7 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
 </div>
 
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec';
+const APPS_SCRIPT_URL = 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA';
 
 let currentUser = null;
 let skStatus    = null;
@@ -807,6 +807,22 @@ function showScreen(id) {
 }
 
 // ── LOGIN ──────────────────────────────────────────────
+// ── JSONP helper — bypass CORS untuk GET request ──────────────────
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cb  = '__cb' + Date.now();
+    const tag = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup(); reject(new Error('Timeout'));
+    }, 10000);
+    function cleanup() { delete window[cb]; tag.remove(); clearTimeout(timer); }
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    tag.src = url + '&callback=' + cb;
+    tag.onerror = () => { cleanup(); reject(new Error('Script error')); };
+    document.head.appendChild(tag);
+  });
+}
+
 async function doLogin() {
   const nip  = document.getElementById('login-nip').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
@@ -815,24 +831,13 @@ async function doLogin() {
   btn.disabled = true;
   btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Memverifikasi…`;
   try {
-    if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') {
-      const DEMO = [
-        { nip:'198501012010011001', password:'bdp2024', nama:'Ahmad Fauzi',   kota:'Kabupaten Bandung' },
-        { nip:'199003152015012002', password:'bdp2024', nama:'Siti Rahayu',   kota:'Kota Bandung' },
-        { nip:'198712202014011003', password:'bdp2024', nama:'Budi Santoso',  kota:'Kabupaten Bogor' },
-        { nip:'199205101018012004', password:'bdp2024', nama:'Dewi Lestari',  kota:'Kota Bekasi' },
-        { nip:'199901012024011005', password:'bdp2024', nama:'Rudi Hermawan', kota:'Kabupaten Bekasi' },
-      ];
-      const user = DEMO.find(u => u.nip === nip && u.password === pass);
-      if (user) onLoginSuccess({ nama:user.nama, kota:user.kota, nip:user.nip });
-      else showLoginAlert('NIP atau password salah. Hubungi admin jika lupa password.');
-    } else {
-      const res  = await fetch(APPS_SCRIPT_URL + '?action=login&nip=' + encodeURIComponent(nip) + '&pass=' + encodeURIComponent(pass));
-      const data = await res.json();
-      if (data.success) onLoginSuccess(data.user);
-      else showLoginAlert(data.message || 'NIP atau password salah.');
-    }
-  } catch(e) { showLoginAlert('Gagal menghubungi server. Periksa koneksi internet Anda.'); }
+    const url  = APPS_SCRIPT_URL + '?action=login&nip=' + encodeURIComponent(nip) + '&pass=' + encodeURIComponent(pass);
+    const data = await jsonp(url);
+    if (data.success) onLoginSuccess(data.user);
+    else showLoginAlert(data.message || 'NIP atau password salah.');
+  } catch(e) {
+    showLoginAlert('Gagal menghubungi server. Periksa koneksi internet.');
+  }
   btn.disabled = false;
   btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Masuk`;
 }
@@ -867,13 +872,10 @@ async function loadSKScreen() {
   document.getElementById('sk-satker-label').textContent = 'Satuan Kerja: ' + currentUser.kota;
   showScreen('screen-sk');
   try {
-    if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') { renderSKScreen(null); }
-    else {
-      const res  = await fetch(APPS_SCRIPT_URL + '?action=getSK&kota=' + encodeURIComponent(currentUser.kota));
-      const data = await res.json();
-      skStatus = data.sk || null;
-      renderSKScreen(skStatus);
-    }
+    const url  = APPS_SCRIPT_URL + '?action=getSK&kota=' + encodeURIComponent(currentUser.kota);
+    const data = await jsonp(url);
+    skStatus = data.sk || null;
+    renderSKScreen(skStatus);
   } catch(e) { renderSKScreen(null); }
 }
 
@@ -926,7 +928,7 @@ async function saveSK() {
     updated_at:  new Date().toLocaleDateString('id-ID'),
   };
   skStatus = payload;
-  if (APPS_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') {
+  if (APPS_SCRIPT_URL !== 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA') {
     try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
   }
   btn.disabled = false;
@@ -1098,7 +1100,7 @@ async function submitBDP() {
     buku_reg: skStatus ? skStatus.buku_reg: '—',
   };
 
-  if (APPS_SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec') {
+  if (APPS_SCRIPT_URL !== 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA') {
     try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
   }
 
