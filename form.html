@@ -1352,20 +1352,23 @@ async function submitBDP() {
 
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
-  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Mengirim…`;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Mengirim data…`;
 
   const sifat = [];
   if (document.getElementById('sifat_rusak')?.checked)   sifat.push('Mudah Rusak');
   if (document.getElementById('sifat_menguap')?.checked)  sifat.push('Mudah Menguap');
   if (document.getElementById('sifat_terbakar')?.checked) sifat.push('Mudah Terbakar');
 
+  // ID unik untuk mengaitkan file dengan data BDP
+  const bdpId = Date.now().toString();
+
   const payload = {
     action:'submitBDP', timestamp:new Date().toLocaleString('id-ID'),
+    bdp_id: bdpId,
     kota:currentUser.kota, nip:currentUser.nip,
     pelapor:      document.getElementById('pelapor').value,
     tgl_terima:   document.getElementById('tgl_terima').value,
     sumber_bdp:   sumberVal,
-    // Identitas masyarakat (hanya jika Laporan Masyarakat)
     mas_nama:     isLaporan ? document.getElementById('mas_nama').value  : '',
     mas_nik:      isLaporan ? document.getElementById('mas_nik').value   : '',
     mas_alamat:   isLaporan ? document.getElementById('mas_alamat').value: '',
@@ -1389,7 +1392,16 @@ async function submitBDP() {
     buku_reg: skStatus ? skStatus.buku_reg: '—',
   };
 
-  // Konversi file ke base64 untuk dikirim ke Drive
+  // LANGKAH 1: Kirim data teks saja (kecil, pasti masuk)
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {}
+
+  // LANGKAH 2: Upload file satu per satu secara terpisah
   async function toBase64(file) {
     return new Promise((res, rej) => {
       const r = new FileReader();
@@ -1398,41 +1410,50 @@ async function submitBDP() {
       r.readAsDataURL(file);
     });
   }
-  async function fileData(id) {
-    const f = document.getElementById(id)?.files[0];
-    if (!f) return null;
-    return { name: f.name, type: f.type, data: await toBase64(f) };
-  }
-  async function filesData(id) {
-    const files = document.getElementById(id)?.files;
-    if (!files || !files.length) return [];
-    const result = [];
-    for (const f of files) result.push({ name: f.name, type: f.type, data: await toBase64(f) });
-    return result;
+
+  async function uploadSingleFile(file, label) {
+    if (!file) return;
+    try {
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Upload ${label}…`;
+      const b64 = await toBase64(file);
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          action:'uploadFile',
+          bdp_id: bdpId,
+          kota:   currentUser.kota,
+          label,
+          name:   file.name,
+          type:   file.type,
+          data:   b64
+        })
+      });
+    } catch(e) {}
   }
 
-  // Kumpulkan semua file yang relevan
-  payload.files = {};
+  async function uploadMultipleFiles(files, label) {
+    if (!files || !files.length) return;
+    for (let i = 0; i < files.length; i++)
+      await uploadSingleFile(files[i], label + (files.length > 1 ? `_${i+1}` : ''));
+  }
+
   if (isLaporan) {
-    payload.files.ktp          = await fileData('file-ktp');
-    payload.files.dok_laporan  = await filesData('file-dok-laporan');
+    await uploadSingleFile(document.getElementById('file-ktp')?.files[0], 'KTP');
+    await uploadMultipleFiles(document.getElementById('file-dok-laporan')?.files, 'Dokumentasi');
   }
   if (statusVal === 'Masih dalam penguasaan Bawaslu')
-    payload.files.foto_bdp    = await filesData('file-foto-bdp');
+    await uploadMultipleFiles(document.getElementById('file-foto-bdp')?.files, 'Foto_BDP');
   if (statusVal === 'Dikembalikan' || statusVal === 'Ditolak')
-    payload.files.pengembalian = await fileData('file-pengembalian');
+    await uploadSingleFile(document.getElementById('file-pengembalian')?.files[0], 'BA');
   if (statusVal === 'Dimusnahkan') {
-    payload.files.pengumuman   = await fileData('file-pengumuman');
-    payload.files.sk_musna     = await fileData('file-sk-musna');
-  }
-
-  if (APPS_SCRIPT_URL) {
-    try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
+    await uploadSingleFile(document.getElementById('file-pengumuman')?.files[0], 'Pengumuman');
+    await uploadSingleFile(document.getElementById('file-sk-musna')?.files[0], 'SK_Musna');
   }
 
   showSuccess(payload);
   btn.disabled = false;
-  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Kirim Data BDP`;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Konfirmasi & Kirim`;
 }
 
 function showSuccess(d) {
