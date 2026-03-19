@@ -509,15 +509,24 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
           </div>
           <div id="sk-detail-fields" style="display:none">
             <div class="field-row">
-              <div class="field"><label>No. SK Tim BDP</label><input type="text" id="nosk" placeholder="Contoh: 001/SK/BDP/2024"></div>
-              <div class="field"><label>Tanggal SK</label><input type="date" id="tglsk"></div>
+              <div class="field">
+                <label>No. SK Tim BDP <span class="req">*</span></label>
+                <input type="text" id="nosk" placeholder="Contoh: 001/SK/BDP/2024">
+              </div>
+              <div class="field">
+                <label>Tanggal SK <span class="req">*</span></label>
+                <input type="date" id="tglsk">
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <label>Upload SK ke Google Drive</label>
-            <div class="toggle-group">
-              <label class="toggle-option"><input type="radio" name="gdrive_sk" value="Sudah Upload"><span class="toggle-label gold">☁ Sudah Upload</span></label>
-              <label class="toggle-option"><input type="radio" name="gdrive_sk" value="Belum Upload" checked><span class="toggle-label"><span class="toggle-dot"></span> Belum Upload</span></label>
+            <div class="field">
+              <label>Upload File SK (PDF) <span class="req">*</span></label>
+              <div class="upload-area" id="upload-area-sk-doc" onclick="document.getElementById('file-sk-doc').click()">
+                <input type="file" id="file-sk-doc" accept=".pdf" onchange="onFileSelect(this,'upload-area-sk-doc','file-name-sk-doc')">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Klik untuk upload<br><strong>File SK Tim BDP (PDF)</strong></div>
+                <div class="upload-hint">PDF · Maks. 5MB</div>
+                <div class="upload-file-name" id="file-name-sk-doc"></div>
+              </div>
             </div>
           </div>
           <div class="divider">Buku Register BDP</div>
@@ -526,13 +535,6 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
             <div class="toggle-group">
               <label class="toggle-option"><input type="radio" name="buku_reg" value="Ada"><span class="toggle-label"><span class="toggle-dot"></span> Ada</span></label>
               <label class="toggle-option"><input type="radio" name="buku_reg" value="Tidak Ada" checked><span class="toggle-label"><span class="toggle-dot"></span> Tidak Ada</span></label>
-            </div>
-          </div>
-          <div class="field">
-            <label>Upload Buku Register ke Google Drive</label>
-            <div class="toggle-group">
-              <label class="toggle-option"><input type="radio" name="gdrive_buku" value="Sudah Upload"><span class="toggle-label gold">☁ Sudah Upload</span></label>
-              <label class="toggle-option"><input type="radio" name="gdrive_buku" value="Belum Upload" checked><span class="toggle-label"><span class="toggle-dot"></span> Belum Upload</span></label>
             </div>
           </div>
         </div>
@@ -1076,7 +1078,7 @@ function renderSKScreen(sk) {
     const updateForm = document.getElementById('sk-update-form');
     updateForm.appendChild(fields);
     document.getElementById('sk-saved-info').textContent =
-      `SK: ${sk.sk_tim} · Buku: ${sk.buku_reg} · GDrive SK: ${sk.gdrive_sk} · Diperbarui: ${sk.updated_at||'—'}`;
+      `SK: ${sk.sk_tim} · Buku: ${sk.buku_reg} · Diperbarui: ${sk.updated_at||'—'}`;
     prefillSKForm(sk);
   } else {
     done.style.display    = 'none';
@@ -1090,11 +1092,8 @@ function prefillSKForm(sk) {
   document.querySelectorAll('input[name="sk_tim"]').forEach(r => r.checked = r.value === sk.sk_tim);
   toggleSKDetail(sk.sk_tim === 'Ada');
   if (document.getElementById('nosk'))  document.getElementById('nosk').value  = sk.nosk  || '';
-  if (document.getElementById('tglsk')) document.getElementById('tglsk').value = sk.tglsk || '';
-  document.querySelectorAll('input[name="gdrive_sk"]').forEach(r => r.checked = r.value === sk.gdrive_sk);
-  document.querySelectorAll('input[name="buku_reg"]').forEach(r => r.checked = r.value === sk.buku_reg);
-  document.querySelectorAll('input[name="gdrive_buku"]').forEach(r => r.checked = r.value === sk.gdrive_buku);
-}
+  if (document.getElementById('tglsk')) document.getElementById('tglsk').value = sk.tglsk || '';  document.querySelectorAll('input[name="buku_reg"]').forEach(r => r.checked = r.value === sk.buku_reg);
+  document.querySelectorAll('input[name="buku_reg"]').forEach(r => r.checked = r.value === sk.buku_reg);}
 function toggleSKDetail(show) {
   const el = document.getElementById('sk-detail-fields');
   if (el) el.style.display = show ? 'block' : 'none';
@@ -1110,7 +1109,6 @@ async function saveSK() {
     if (skVal   !== 'Ada') missing.push('SK Tim BDP');
     if (bukuVal !== 'Ada') missing.push('Buku Register BDP');
     const btn = document.getElementById('btn-save-sk');
-    // Tampilkan notifikasi
     const existing = document.getElementById('sk-validation-warn');
     if (existing) existing.remove();
     const box = document.createElement('div');
@@ -1125,6 +1123,27 @@ async function saveSK() {
     return;
   }
 
+  // Validasi tambahan jika SK Ada: nosk, tglsk, dan file PDF wajib diisi
+  if (skVal === 'Ada') {
+    const nosk  = document.getElementById('nosk')?.value.trim();
+    const tglsk = document.getElementById('tglsk')?.value;
+    const skFile = document.getElementById('file-sk-doc')?.files[0];
+    if (!nosk || !tglsk || !skFile) {
+      const btn = document.getElementById('btn-save-sk');
+      const existing = document.getElementById('sk-validation-warn');
+      if (existing) existing.remove();
+      const box = document.createElement('div');
+      box.id = 'sk-validation-warn';
+      box.className = 'warn-box';
+      box.style.cssText = 'margin:0 2rem 1rem;display:flex;gap:10px;align-items:flex-start';
+      box.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:1px"><path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6v4M8 11.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Wajib mengisi <b>Nomor SK</b>, <b>Tanggal SK</b>, dan <b>upload file PDF SK</b> sebelum melanjutkan.</span>`;
+      btn.parentNode.insertBefore(box, btn.parentNode.firstChild);
+      box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      return;
+    }
+  }
+
   // Hapus warning jika ada
   const existing = document.getElementById('sk-validation-warn');
   if (existing) existing.remove();
@@ -1132,20 +1151,47 @@ async function saveSK() {
   const btn = document.getElementById('btn-save-sk');
   btn.disabled = true;
   btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Menyimpan…`;
+
+  const skId = Date.now().toString();
   const payload = {
     action:'saveSK', kota:currentUser.kota, nip:currentUser.nip,
-    sk_tim:      skVal,
-    nosk:        (document.getElementById('nosk')  ? document.getElementById('nosk').value  : '') || '',
-    tglsk:       (document.getElementById('tglsk') ? document.getElementById('tglsk').value : '') || '',
-    gdrive_sk:   getRadio('gdrive_sk')   || 'Belum Upload',
-    buku_reg:    bukuVal,
-    gdrive_buku: getRadio('gdrive_buku') || 'Belum Upload',
-    updated_at:  new Date().toLocaleDateString('id-ID'),
+    sk_tim:     skVal,
+    nosk:       document.getElementById('nosk')?.value  || '',
+    tglsk:      document.getElementById('tglsk')?.value || '',
+    buku_reg:   bukuVal,
+    updated_at: new Date().toLocaleDateString('id-ID'),
+    sk_id:      skId,
   };
   skStatus = payload;
+
+  // Kirim data teks SK dulu
   if (APPS_SCRIPT_URL) {
     try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
   }
+
+  // Upload file PDF SK ke Drive secara terpisah
+  const skFile = document.getElementById('file-sk-doc')?.files[0];
+  if (skFile && APPS_SCRIPT_URL) {
+    try {
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite"><path d="M8 2a6 6 0 1 1-4.24 1.76" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Upload SK…`;
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res(r.result.split(',')[1]);
+        r.onerror = () => rej('');
+        r.readAsDataURL(skFile);
+      });
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          action:'uploadFile', bdp_id: skId,
+          kota: currentUser.kota, label: 'SK_Tim',
+          name: skFile.name, type: skFile.type, data: b64
+        })
+      });
+    } catch(e) {}
+  }
+
   btn.disabled = false;
   btn.innerHTML = `Simpan & Lanjutkan <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   goToForm();
