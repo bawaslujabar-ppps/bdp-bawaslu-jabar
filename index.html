@@ -370,30 +370,40 @@ async function loadData() {
     if (!text || text.trim() === '') throw new Error('Response kosong — Sheets belum di-share publik atau Sheet Name salah');
     const json = JSON.parse(text.replace(/^[^\(]+\(/, '').replace(/\);\s*$/, ''));
     if (!json.table) throw new Error('Struktur data tidak valid — pastikan Sheet sudah di-share "Anyone with the link"');
-    const cols = json.table.cols.map(c => (c.label || '').toLowerCase().replace(/\s+/g,'_').trim());
     const rows = json.table.rows || [];
-    console.log('[BDP Debug] Kolom terdeteksi:', cols);
-    console.log('[BDP Debug] Jumlah baris:', rows.length);
+    console.log('[BDP Debug] Jumlah baris raw:', rows.length);
 
-    // Deteksi apakah cols sudah bersih atau tercampur dengan nilai
-    // Kolom yang benar harusnya: timestamp, kota, nip, pelapor, dst (pendek, tanpa spasi aneh)
-    // Jika cols mengandung nilai panjang, gunakan posisi hardcoded sesuai struktur CSV
+    // Kolom hardcoded sesuai struktur sheet (karena gviz menggabungkan header+nilai baris pertama)
     const KNOWN_COLS = ['timestamp','kota','nip','pelapor','tgl_terima','sumber_bdp',
       'mas_nama','mas_nik','mas_alamat','kategori','no_laporan','klasifikasi','wujud',
       'sifat_barang','jenis_barang','jumlah','nominal','tempat_simpan','ba_serahterima',
       'dokumentasi_digital','jenis_perkara','lokasi_temuan','status_bdp','ket',
       'sk_tim','nosk','buku_reg','bdp_id','link_ktp','link_dok_laporan',
       'link_foto_bdp','link_pengembalian','link_pengumuman','link_sk_musna'];
-    const colsClean = cols[1] && cols[1].length > 20 ? KNOWN_COLS : cols;
 
-    data = rows
-      .filter(r => r.c && r.c.some(cell => cell && cell.v))
-      .map(r => {
-        const obj = {};
-        colsClean.forEach((col, i) => {
-          const cell = r.c ? r.c[i] : null;
-          obj[col] = (cell && cell.v !== null && cell.v !== undefined) ? String(cell.v).trim() : '';
-        });
+    // Rekonstruksi baris pertama dari nama kolom gviz (yang sudah berisi nilai baris 1)
+    const rawCols = json.table.cols.map(c => (c.label || ''));
+    const firstRowObj = {};
+    KNOWN_COLS.forEach((col, i) => {
+      // Nama kolom gviz = "namaKolom_nilaiData", ambil bagian setelah prefix kolom
+      const raw = rawCols[i] || '';
+      const prefix = col + '_';
+      const val = raw.toLowerCase().startsWith(col.toLowerCase())
+        ? raw.slice(col.length).replace(/^[_\s]+/, '')
+        : raw;
+      firstRowObj[col] = val;
+    });
+    // Konversi rows biasa
+    const allRows = [firstRowObj, ...rows.filter(r => r.c && r.c.some(cell => cell && cell.v)).map(r => {
+      const obj = {};
+      KNOWN_COLS.forEach((col, i) => {
+        const cell = r.c ? r.c[i] : null;
+        obj[col] = (cell && cell.v !== null && cell.v !== undefined) ? String(cell.v).trim() : '';
+      });
+      return obj;
+    })];
+
+    data = allRows.map(obj => {
         // Normalisasi kolom — sesuai nama kolom Google Sheets
         obj.kota         = obj.kota || obj.satuan_kerja || obj['satuan kerja'] || '';
         obj.no_laporan   = obj.no_laporan || obj.nomor_laporan || obj['no._laporan'] || '';
@@ -425,7 +435,7 @@ async function loadData() {
 
         return obj;
       })
-      .filter(r => r.kota || r.timestamp); // simpan baris yang punya kota atau timestamp
+      .filter(r => r.kota);
 
     console.log('[BDP Debug] Data setelah filter:', data.length, data[0] || 'kosong');
 
