@@ -312,7 +312,13 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
           </div>
           <div class="field">
             <label>Password <span class="req">*</span></label>
-            <input type="password" id="login-pass" placeholder="Password Anda" oninput="clearLoginAlert()" onkeydown="if(event.key==='Enter')doLogin()">
+            <div style="position:relative">
+              <input type="password" id="login-pass" placeholder="Password Anda" oninput="clearLoginAlert()" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px">
+              <button type="button" onclick="togglePassVis()" style="position:absolute;right:0;top:0;bottom:0;width:42px;background:none;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center" id="btn-show-pass" title="Tampilkan password">
+                <svg id="eye-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
+                <svg id="eye-off-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><path d="M2 2l12 12M6.5 6.6A2 2 0 0 0 9.4 9.5M4.2 4.3C2.8 5.3 1.8 6.7 1 8c1.2 2 3.8 5 7 5a7 7 0 0 0 3.8-1.2M6 3.1A7 7 0 0 1 8 3c3.2 0 5.8 3 7 5-.5.9-1.2 1.8-2 2.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
             <div class="field-hint">Password diberikan oleh admin sistem Bawaslu Jabar</div>
           </div>
           <button class="btn btn-red btn-full" id="btn-login" onclick="doLogin()" style="margin-top:.5rem">
@@ -963,7 +969,8 @@ select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.or
   <footer class="site-footer">Sistem BDP &mdash; <span>Bawaslu Provinsi Jawa Barat</span></footer>
 </div>
 
-
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFyTKKskZ5HDf8Er692pjtyegCx8nczTFOqbuzFcMvqh66FINMHO_9aYri3kkhFx_R/exec';
 
 let currentUser = null;
 let skStatus    = null;
@@ -1025,6 +1032,15 @@ function showLoginAlert(msg) {
   el.classList.add('show');
 }
 function clearLoginAlert() { document.getElementById('login-alert').classList.remove('show'); }
+function togglePassVis() {
+  const inp  = document.getElementById('login-pass');
+  const eye  = document.getElementById('eye-icon');
+  const eoff = document.getElementById('eye-off-icon');
+  const show = inp.type === 'password';
+  inp.type   = show ? 'text' : 'password';
+  eye.style.display  = show ? 'none'  : '';
+  eoff.style.display = show ? ''      : 'none';
+}
 
 function logout() {
   currentUser = null; skStatus = null;
