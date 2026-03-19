@@ -1389,6 +1389,43 @@ async function submitBDP() {
     buku_reg: skStatus ? skStatus.buku_reg: '—',
   };
 
+  // Konversi file ke base64 untuk dikirim ke Drive
+  async function toBase64(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload  = () => res(r.result.split(',')[1]);
+      r.onerror = () => rej('');
+      r.readAsDataURL(file);
+    });
+  }
+  async function fileData(id) {
+    const f = document.getElementById(id)?.files[0];
+    if (!f) return null;
+    return { name: f.name, type: f.type, data: await toBase64(f) };
+  }
+  async function filesData(id) {
+    const files = document.getElementById(id)?.files;
+    if (!files || !files.length) return [];
+    const result = [];
+    for (const f of files) result.push({ name: f.name, type: f.type, data: await toBase64(f) });
+    return result;
+  }
+
+  // Kumpulkan semua file yang relevan
+  payload.files = {};
+  if (isLaporan) {
+    payload.files.ktp          = await fileData('file-ktp');
+    payload.files.dok_laporan  = await filesData('file-dok-laporan');
+  }
+  if (statusVal === 'Masih dalam penguasaan Bawaslu')
+    payload.files.foto_bdp    = await filesData('file-foto-bdp');
+  if (statusVal === 'Dikembalikan' || statusVal === 'Ditolak')
+    payload.files.pengembalian = await fileData('file-pengembalian');
+  if (statusVal === 'Dimusnahkan') {
+    payload.files.pengumuman   = await fileData('file-pengumuman');
+    payload.files.sk_musna     = await fileData('file-sk-musna');
+  }
+
   if (APPS_SCRIPT_URL) {
     try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); } catch(e) {}
   }
