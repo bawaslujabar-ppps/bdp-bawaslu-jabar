@@ -352,8 +352,9 @@
 </footer>
 
 <script>
-const SHEET_ID  = '1AG6pVCmq71-ravNlF9luMpXgSnLAVAi-xd0WkVn-bpQ';
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const SHEET_ID   = '1AG6pVCmq71-ravNlF9luMpXgSnLAVAi-xd0WkVn-bpQ';
+const SHEET_NAME = 'Data_BDP'; // ← Nama tab sheet
+const SHEET_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
 let data = [];
 let sortCol = 'kota', sortAsc = true;
@@ -364,10 +365,15 @@ async function loadData() {
   setSyncStatus('load', 'Memuat data dari Google Sheets…');
   try {
     const res  = await fetch(SHEET_URL + '&t=' + Date.now());
+    if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
     const text = await res.text();
+    if (!text || text.trim() === '') throw new Error('Response kosong — Sheets belum di-share publik atau Sheet Name salah');
     const json = JSON.parse(text.replace(/^[^\(]+\(/, '').replace(/\);\s*$/, ''));
+    if (!json.table) throw new Error('Struktur data tidak valid — pastikan Sheet sudah di-share "Anyone with the link"');
     const cols = json.table.cols.map(c => (c.label || '').toLowerCase().replace(/\s+/g,'_').trim());
     const rows = json.table.rows || [];
+    console.log('[BDP Debug] Kolom terdeteksi:', cols);
+    console.log('[BDP Debug] Jumlah baris:', rows.length);
 
     data = rows
       .filter(r => r.c && r.c[0] && r.c[0].v)
@@ -414,8 +420,8 @@ async function loadData() {
     setSyncStatus('ok', `Sinkronisasi berhasil · ${t.toLocaleTimeString('id-ID')} · ${data.length} laporan BDP`);
     render();
   } catch(e) {
-    setSyncStatus('err', 'Gagal memuat — pastikan Sheets sudah di-share "Anyone with the link". Klik Refresh untuk coba lagi.');
-    console.error(e);
+    console.error('[BDP Error]', e);
+    setSyncStatus('err', `❌ Gagal: ${e.message}`);
   }
   hideLoading();
 }
