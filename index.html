@@ -376,7 +376,7 @@ async function loadData() {
     console.log('[BDP Debug] Jumlah baris:', rows.length);
 
     data = rows
-      .filter(r => r.c && r.c[0] && r.c[0].v)
+      .filter(r => r.c && r.c.some(cell => cell && cell.v))
       .map(r => {
         const obj = {};
         cols.forEach((col, i) => {
@@ -414,7 +414,9 @@ async function loadData() {
 
         return obj;
       })
-      .filter(r => r.kota);
+      .filter(r => r.kota || r.timestamp); // simpan baris yang punya kota atau timestamp
+
+    console.log('[BDP Debug] Data setelah filter:', data.length, data[0] || 'kosong');
 
     const t = new Date();
     setSyncStatus('ok', `Sinkronisasi berhasil · ${t.toLocaleTimeString('id-ID')} · ${data.length} laporan BDP`);
