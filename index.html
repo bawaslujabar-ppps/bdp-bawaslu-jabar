@@ -307,7 +307,7 @@
       <option>Tindak Pidana</option>
       <option>Administrasi</option>
       <option>Etik</option>
-      <option>Peraturan Lainnya</option>
+      <option>Peraturan Pemilu Lainnya</option>
     </select>
     <select class="filter-sel" id="f-klasifikasi" onchange="render()">
       <option value="">Klasifikasi: Semua</option>
@@ -377,17 +377,35 @@ async function loadData() {
           const cell = r.c ? r.c[i] : null;
           obj[col] = (cell && cell.v !== null && cell.v !== undefined) ? String(cell.v).trim() : '';
         });
-        // Normalisasi kolom — sesuaikan dengan nama kolom Google Sheets Anda
+        // Normalisasi kolom — sesuai nama kolom Google Sheets
         obj.kota         = obj.kota || obj.satuan_kerja || obj['satuan kerja'] || '';
         obj.no_laporan   = obj.no_laporan || obj.nomor_laporan || obj['no._laporan'] || '';
         obj.tgl_terima   = obj.tgl_terima || obj.tanggal_terima || obj.tanggal || '';
         obj.sumber_bdp   = obj.sumber_bdp || obj.sumber || obj.pelapor || '';
-        obj.jenis_barang = obj.jenis_barang || obj['jenis_barang'] || '';
         obj.klasifikasi  = obj.klasifikasi || '';
-        obj.status_bdp   = obj.status_bdp || obj['status_bdp'] || 'Dalam Penguasaan';
-        obj.jenis_perkara= obj.jenis_perkara || obj['jenis_perkara'] || '';
-        obj.nominal      = parseFloat((obj.nominal||'').replace(/[^0-9.]/g,'')) || 0;
         obj.ket          = obj.ket || obj.keterangan || '';
+        obj.nominal      = parseFloat((obj.nominal||'').replace(/[^0-9.]/g,'')) || 0;
+
+        // Normalisasi jenis_barang: Tunai → Uang
+        const jbRaw = (obj.jenis_barang || '').trim();
+        if (jbRaw === 'Tunai' || jbRaw === 'Uang') obj.jenis_barang = 'Uang';
+        else if (jbRaw) obj.jenis_barang = jbRaw;
+
+        // Normalisasi status_bdp dari nilai Sheets ke label ringkas
+        const stRaw = (obj.status_bdp || '').toLowerCase();
+        if (stRaw.includes('penguasaan'))       obj.status_bdp = 'Dalam Penguasaan';
+        else if (stRaw.includes('dikembalikan') || stRaw.includes('kembali')) obj.status_bdp = 'Dikembalikan';
+        else if (stRaw.includes('dimusnahkan') || stRaw.includes('musna'))    obj.status_bdp = 'Dimusnahkan';
+        else if (stRaw) obj.status_bdp = obj.status_bdp;
+        else obj.status_bdp = 'Dalam Penguasaan';
+
+        // Normalisasi jenis_perkara
+        const jpRaw = (obj.jenis_perkara || '').toLowerCase();
+        if (jpRaw.includes('pidana'))           obj.jenis_perkara = 'Tindak Pidana';
+        else if (jpRaw.includes('administrasi') || jpRaw.includes('admin')) obj.jenis_perkara = 'Administrasi';
+        else if (jpRaw.includes('etik'))        obj.jenis_perkara = 'Etik';
+        else if (jpRaw) obj.jenis_perkara = obj.jenis_perkara;
+
         return obj;
       })
       .filter(r => r.kota);
@@ -432,11 +450,11 @@ function badgeStatus(v) {
   return v ? `<span class="badge ${map[v]||'b-lainnya'}">${v}</span>` : '<span style="color:var(--light);font-size:12px">—</span>';
 }
 function badgeJ(v) {
-  const m = {'Uang':'b-uang','Sembako':'b-sembako','Pakaian':'b-pakaian','Elektronik/Dokumen':'b-elektro','Lainnya':'b-lainnya'};
+  const m = {'Uang':'b-uang','Sembako':'b-sembako','Pakaian':'b-pakaian','Elektronik/Dokumen':'b-elektro','Lainnya':'b-lainnya','Tunai':'b-uang'};
   return v ? `<span class="badge ${m[v]||'b-lainnya'}">${v}</span>` : '<span style="color:var(--light);font-size:12px">—</span>';
 }
 function badgeP(v) {
-  const m = {'Tindak Pidana':'b-pidana','Administrasi':'b-adm','Etik':'b-etik','Peraturan Lainnya':'b-lainnya'};
+  const m = {'Tindak Pidana':'b-pidana','Administrasi':'b-adm','Etik':'b-etik','Peraturan Lainnya':'b-lainnya','Peraturan Pemilu Lainnya':'b-pemilu'};
   return v ? `<span class="badge ${m[v]||'b-lainnya'}">${v}</span>` : '<span style="color:var(--light);font-size:12px">—</span>';
 }
 function badgeK(v) {
@@ -552,7 +570,12 @@ function render() {
   chartStatus.update();
 
   const jC = {'Uang':0,'Sembako':0,'Pakaian':0,'Elektronik/Dokumen':0,'Lainnya':0};
-  data.forEach(d => { if(d.jenis_barang && jC[d.jenis_barang] !== undefined) jC[d.jenis_barang]++; });
+  data.forEach(d => {
+    const j = d.jenis_barang;
+    if (j === 'Uang' || j === 'Tunai') jC['Uang']++;
+    else if (jC[j] !== undefined) jC[j]++;
+    else if (j) jC['Lainnya']++;
+  });
   chartJenis.data.datasets[0].data = Object.values(jC);
   chartJenis.update();
 
